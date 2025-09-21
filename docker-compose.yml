@@ -1,0 +1,40 @@
+# Simple Docker Compose - All-in-One Container
+# This version builds everything inside the container without needing a separate Dockerfile
+
+services:
+  acceptance-dashboard:
+    image: node:18-alpine
+    container_name: acceptance-dashboard
+    restart: unless-stopped
+    working_dir: /app
+    ports:
+      - "8081:3000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    command: >
+      sh -c "
+        echo '🚀 Starting Acceptance Test Dashboard...' &&
+        echo '📦 Installing dependencies...' &&
+        npm install &&
+        echo '🔨 Building application...' &&
+        npm run build &&
+        echo '🌐 Starting development server...' &&
+        npm run preview -- --host 0.0.0.0 --port 3000
+      "
+    networks:
+      - dashboard-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  dashboard-network:
+    driver: bridge
+    name: dashboard-network
